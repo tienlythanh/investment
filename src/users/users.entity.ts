@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty, IsBoolean } from 'class-validator'
+import { IsString, IsEmail, IsNotEmpty, IsBoolean, IsOptional } from 'class-validator'
 import { AutoMap } from '@automapper/classes'
 
 export class UserEntity {
@@ -27,6 +27,22 @@ export class UserEntity {
   createdAt: string
 
   @AutoMap()
+  @IsOptional()
   @IsString()
-  lastLogin: string
+  lastLogin?: string
+
+  @AutoMap()
+  @IsOptional()
+  @IsString()
+  verifyToken?: string
+
+  @AutoMap()
+  @IsOptional()
+  @IsString()
+  verifiedAt?: string
+
+  @AutoMap()
+  @IsOptional()
+  @IsString()
+  apiToken?: string
 }

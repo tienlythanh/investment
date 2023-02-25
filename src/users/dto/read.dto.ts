@@ -11,10 +11,14 @@ export class ReadUserDto {
   isActive: boolean
 
   @AutoMap()
-  @IsDateString()
+  @IsString()
   createdAt: string
 
   @AutoMap()
-  @IsDateString()
+  @IsString()
   lastLogin: string
+
+  @AutoMap()
+  @IsString()
+  verifiedAt: string
 }

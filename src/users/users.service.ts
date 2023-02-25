@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
-import { RegisterUserDto } from './dto/register.dto'
 import { Mapper } from '@automapper/core'
 import { InjectMapper } from '@automapper/nestjs'
 import { UserEntity } from '../users/users.entity'
-import { ReadUserDto } from './dto/read.dto'
 
 @Injectable()
 export class UsersService {
@@ -13,41 +11,52 @@ export class UsersService {
     @InjectMapper() private readonly classMapper: Mapper
   ) {}
 
-  async create(registration: UserEntity): Promise<UserEntity> {
-    const user = await this.prisma.user.create({ data: registration })
+  async create(userEntity: UserEntity): Promise<UserEntity> {
+    const user = await this.prisma.user.create({ data: userEntity })
     return user
   }
 
-  async findByEmail(email: string): Promise<UserEntity> {
+  async findByEmail(userEntity: UserEntity): Promise<UserEntity> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { email } })
+      const user = await this.prisma.user.findUnique({ where: { email: userEntity.email } })
       return user
     } catch (error) {
       throw error
     }
   }
 
-  async findById(id: string): Promise<UserEntity> {
+  async findById(userEntity: UserEntity): Promise<UserEntity> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { id } })
+      const user = await this.prisma.user.findUnique({ where: { id: userEntity.id } })
       return user
     } catch (error) {
       throw error
     }
   }
 
-  async deleteById(id: string): Promise<UserEntity> {
+  async findByToken(userEntity: UserEntity): Promise<UserEntity> {
     try {
-      const user = await this.prisma.user.delete({ where: { id } })
+      const user = await this.prisma.user.findFirst({
+        where: { verifyToken: userEntity.verifyToken },
+      })
       return user
     } catch (error) {
       throw error
     }
   }
 
-  async updateById(id: string, updateData: object): Promise<UserEntity> {
+  async deleteById(userEntity: UserEntity): Promise<UserEntity> {
     try {
-      const user = await this.prisma.user.update({ where: { id: id }, data: updateData })
+      const user = await this.prisma.user.delete({ where: { id: userEntity.id } })
+      return user
+    } catch (error) {
+      throw error
+    }
+  }
+
+  async updateById(userEntity: UserEntity, updateData: object): Promise<UserEntity> {
+    try {
+      const user = await this.prisma.user.update({ where: { id: userEntity.id }, data: updateData })
       return user
     } catch (error) {
       throw error

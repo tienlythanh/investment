@@ -14,6 +14,7 @@ import { AuthService } from './auth.service'
 import { RegisterUserDto } from '../users/dto/register.dto'
 import { ReadUserDto } from 'src/users/dto/read.dto'
 import { JwtAuthGuard } from './jwt-auth.guard'
+import { VerifyTokenDto } from 'src/users/dto/verifyToken.dto'
 
 @Controller('auth')
 export class AuthController {
@@ -28,8 +29,8 @@ export class AuthController {
 
   @HttpCode(200)
   @Get('verify')
-  async verify(@Query('userId') userId: string): Promise<ReadUserDto> {
-    const user = await this.authService.verify(userId)
+  async verify(@Query() tokenQuery: VerifyTokenDto): Promise<ReadUserDto> {
+    const user = await this.authService.verify(tokenQuery)
     return user
   }
 

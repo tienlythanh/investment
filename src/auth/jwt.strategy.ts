@@ -3,8 +3,6 @@ import { PassportStrategy } from '@nestjs/passport'
 import { Injectable } from '@nestjs/common'
 import { Request } from 'express'
 import { UsersService } from '../users/users.service'
-import { HttpException } from '@nestjs/common/exceptions'
-import { HttpStatus } from '@nestjs/common/enums'
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
