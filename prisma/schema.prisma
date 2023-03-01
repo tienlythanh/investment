@@ -12,12 +12,22 @@ datasource db {
 
 model User {
   id  String  @id @default(auto()) @map("_id") @db.ObjectId
+  username  String
   email String  @unique
   hash  String
   isActive  Boolean
-  lastLogin String?
   createdAt String
   verifyToken  String?
   verifiedAt  String?
   apiToken  String?
+  token Token[]
+}
+
+model Token {
+  id  String  @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt String
+  refreshToken String
+  expired String
+  user  User @relation(fields: [userId], references: [id])
+  userId  String 
 }
