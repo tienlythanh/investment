@@ -4,6 +4,7 @@ import { UsersModule } from './users/users.module'
 import { AutomapperModule } from '@automapper/nestjs'
 import { classes } from '@automapper/classes'
 import { ConfigModule } from '@nestjs/config'
+import { TokenModule } from './token/token.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ConfigModule } from '@nestjs/config'
       envFilePath: '.env',
       isGlobal: true,
     }),
+    TokenModule,
   ],
 })
 export class AppModule {}

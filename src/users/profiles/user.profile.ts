@@ -6,6 +6,7 @@ import { RegisterUserDto } from '../dto/register.dto'
 import { UserEntity } from '../users.entity'
 import { ReadUserDto } from '../dto/read.dto'
 import { VerifyTokenDto } from '../dto/verifyToken.dto'
+import { LoginUserDto } from '../dto/login.dto'
 
 @Injectable()
 export class UserProfile extends AutomapperProfile {
@@ -33,7 +34,16 @@ export class UserProfile extends AutomapperProfile {
           (dest) => dest.verifyToken,
           mapFrom((source) => source.token)
         )
-      )
+      ),
+        createMap(
+          mapper,
+          LoginUserDto,
+          UserEntity,
+          forMember(
+            (dest) => dest.hash,
+            mapFrom((source) => source.password)
+          )
+        )
     }
   }
 }

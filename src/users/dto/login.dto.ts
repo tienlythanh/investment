@@ -1,12 +1,7 @@
 import { IsString, IsEmail, IsNotEmpty } from 'class-validator'
 import { AutoMap } from '@automapper/classes'
 
-export class RegisterUserDto {
-  @AutoMap()
-  @IsString()
-  @IsNotEmpty({ message: 'Username must not empty' })
-  username: string
-
+export class LoginUserDto {
   @AutoMap()
   @IsString()
   @IsEmail()

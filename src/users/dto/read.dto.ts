@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty, IsDateString, IsBoolean } from 'class-validator'
+import { IsString, IsOptional, IsBoolean } from 'class-validator'
 import { AutoMap } from '@automapper/classes'
 
 export class ReadUserDto {
@@ -12,13 +12,14 @@ export class ReadUserDto {
 
   @AutoMap()
   @IsString()
+  username: string
+
+  @AutoMap()
+  @IsString()
   createdAt: string
 
   @AutoMap()
+  @IsOptional()
   @IsString()
-  lastLogin: string
-
-  @AutoMap()
-  @IsString()
-  verifiedAt: string
+  verifiedAt?: string
 }

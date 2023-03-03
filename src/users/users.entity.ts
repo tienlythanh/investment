@@ -14,7 +14,11 @@ export class UserEntity {
 
   @AutoMap()
   @IsString()
-  @IsEmail()
+  @IsNotEmpty()
+  username: string
+
+  @AutoMap()
+  @IsString()
   @IsNotEmpty()
   hash: string
 
@@ -25,11 +29,6 @@ export class UserEntity {
   @AutoMap()
   @IsString()
   createdAt: string
-
-  @AutoMap()
-  @IsOptional()
-  @IsString()
-  lastLogin?: string
 
   @AutoMap()
   @IsOptional()

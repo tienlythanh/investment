@@ -1,20 +1,12 @@
-import {
-  Controller,
-  HttpCode,
-  Get,
-  Put,
-  Post,
-  Body,
-  Req,
-  Res,
-  UseGuards,
-  Query,
-} from '@nestjs/common'
+import { Controller, HttpCode, Get, Put, Post, Body, Req, UseGuards, Query } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { RegisterUserDto } from '../users/dto/register.dto'
 import { ReadUserDto } from 'src/users/dto/read.dto'
-import { JwtAuthGuard } from './jwt-auth.guard'
+import { AccessTokenJwtAuthGuard, RefreshTokenJwtAuthGuard } from './strategies/jwt-auth.guard'
 import { VerifyTokenDto } from 'src/users/dto/verifyToken.dto'
+import { LoginUserDto } from '../users/dto/login.dto'
+import { TokenLoginDto } from './dto/token.login.dto'
+import { TokenEntity } from 'src/token/token.entity'
 
 @Controller('auth')
 export class AuthController {
@@ -36,22 +28,17 @@ export class AuthController {
 
   @HttpCode(200)
   @Post('login')
-  async login(
-    @Body() validateUserData: RegisterUserDto,
-    @Res({ passthrough: true }) response
-  ): Promise<ReadUserDto> {
-    const user = await this.authService.validateUser(validateUserData)
-    const token = this.authService.getJwtToken(user.id)
-    response.setHeader('Set-Cookie', token)
-    return user
+  async login(@Body() validateUserData: LoginUserDto): Promise<TokenLoginDto> {
+    const token = await this.authService.validateUser(validateUserData)
+    return token
   }
 
   @HttpCode(200)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(RefreshTokenJwtAuthGuard)
   @Post('logout')
-  async logout(@Req() request, @Res({ passthrough: true }) response) {
-    let token = this.authService.getCookieForLogOut()
-    response.setHeader('Set-Cookie', token)
-    return request.user
+  async logout(@Req() request): Promise<TokenEntity> {
+    const { jti, userId } = request.user
+    const tokenEntity = await this.authService.logout({ jti, userId })
+    return tokenEntity
   }
 }
