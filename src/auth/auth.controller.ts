@@ -1,12 +1,29 @@
-import { Controller, HttpCode, Get, Put, Post, Body, Req, UseGuards, Query } from '@nestjs/common'
+import {
+  Controller,
+  HttpCode,
+  Get,
+  Put,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  Query,
+  ParseArrayPipe,
+} from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { RegisterUserDto } from '../users/dto/register.dto'
 import { ReadUserDto } from 'src/users/dto/read.dto'
-import { AccessTokenJwtAuthGuard, RefreshTokenJwtAuthGuard } from './strategies/jwt-auth.guard'
+import {
+  AccessTokenJwtAuthGuard,
+  RefreshTokenJwtAuthGuard,
+  AccessTokenLogoutJwtAuthGuard,
+} from './strategies/jwt-auth.guard'
 import { VerifyTokenDto } from 'src/users/dto/verifyToken.dto'
 import { LoginUserDto } from '../users/dto/login.dto'
 import { TokenLoginDto } from './dto/token.login.dto'
-import { TokenEntity } from 'src/token/token.entity'
+
+import { TokenDto } from 'src/token/dto/token.dto'
+import { JtiDto } from 'src/token/dto/jti.dto'
 
 @Controller('auth')
 export class AuthController {
@@ -34,11 +51,39 @@ export class AuthController {
   }
 
   @HttpCode(200)
-  @UseGuards(RefreshTokenJwtAuthGuard)
+  @UseGuards(AccessTokenLogoutJwtAuthGuard)
   @Post('logout')
-  async logout(@Req() request): Promise<TokenEntity> {
+  async logout(@Req() request): Promise<TokenDto> {
     const { jti, userId } = request.user
     const tokenEntity = await this.authService.logout({ jti, userId })
     return tokenEntity
+  }
+
+  @HttpCode(200)
+  @UseGuards(RefreshTokenJwtAuthGuard)
+  @Post('refresh-access-token')
+  async refreshAccessToken(@Req() request): Promise<TokenLoginDto> {
+    const payload = request.user
+    let token = await this.authService.refreshAccessToken(payload)
+    return token
+  }
+
+  @HttpCode(200)
+  @UseGuards(AccessTokenJwtAuthGuard)
+  @Post('revoke-device')
+  async revokeDevices(
+    @Body(new ParseArrayPipe({ items: JtiDto })) jtiDtoArr: JtiDto[],
+    @Req() request
+  ): Promise<any> {
+    const payload = request.user
+    return await this.authService.revokeDevices(payload, jtiDtoArr)
+  }
+
+  @HttpCode(200)
+  @UseGuards(AccessTokenJwtAuthGuard)
+  @Post('revoke-all-device')
+  async revokeAllDevice(@Req() request): Promise<any> {
+    const payload = request.user
+    return await this.authService.revokeAllDevice(payload)
   }
 }

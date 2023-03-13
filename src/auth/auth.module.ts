@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { TokenModule } from 'src/token/token.module'
 import { AccessTokenJwtStrategy } from './strategies/at.jwt.strategy'
 import { RefreshTokenJwtStrategy } from './strategies/rt.jwt.strategy'
+import { AccessTokenLogoutJwtStrategy } from './strategies/logout.at.jwt.strategy'
 
 @Module({
   imports: [
@@ -15,7 +16,12 @@ import { RefreshTokenJwtStrategy } from './strategies/rt.jwt.strategy'
     PassportModule,
     JwtModule.register({ verifyOptions: { ignoreExpiration: true } }),
   ],
-  providers: [AuthService, AccessTokenJwtStrategy, RefreshTokenJwtStrategy],
+  providers: [
+    AuthService,
+    AccessTokenJwtStrategy,
+    RefreshTokenJwtStrategy,
+    AccessTokenLogoutJwtStrategy,
+  ],
   controllers: [AuthController],
   exports: [AuthService],
 })

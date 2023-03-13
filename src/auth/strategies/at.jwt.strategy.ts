@@ -8,7 +8,6 @@ export class AccessTokenJwtStrategy extends PassportStrategy(Strategy, 'access-t
   constructor(private readonly usersService: UsersService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: true,
       secretOrKey: process.env.ACCESS_TOKEN_SECRET_KEY,
     })
   }

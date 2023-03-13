@@ -16,6 +16,8 @@ import { TokenEntity } from 'src/token/token.entity'
 import { TokenLoginDto } from './dto/token.login.dto'
 import { randomUUID } from 'crypto'
 import { JtiDto } from '../token/dto/jti.dto'
+import { TokenPayloadDto } from 'src/token/dto/payload.token.dto'
+import { TokenDto } from 'src/token/dto/token.dto'
 
 @Injectable()
 export class AuthService {
@@ -26,6 +28,9 @@ export class AuthService {
     @InjectMapper() private readonly classMapper: Mapper
   ) {}
 
+  /*
+   * * Register new account
+   */
   async register(registration: RegisterUserDto): Promise<ReadUserDto> {
     registration.password = await bcrypt.hash(registration.password, 10)
 
@@ -43,7 +48,6 @@ export class AuthService {
 
       return this.classMapper.map(user, UserEntity, ReadUserDto)
     } catch (error) {
-      console.log(error)
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code == 'P2002') {
           throw new HttpException('Email exist', HttpStatus.BAD_REQUEST)
@@ -53,6 +57,9 @@ export class AuthService {
     }
   }
 
+  /*
+   * * Verify email of new account
+   */
   async verify(tokenQuery: VerifyTokenDto): Promise<ReadUserDto> {
     const token = tokenQuery.token
     let userEntity = this.classMapper.map(tokenQuery, VerifyTokenDto, UserEntity)
@@ -70,7 +77,7 @@ export class AuthService {
     }
 
     /* Case 1: Token expired */
-    if (payload.exp * 1000 < Date.now()) {
+    if (this.isTokenExpired(payload)) {
       /* Delete user info if user don't active */
       if (!user.isActive) {
         await this.usersService.deleteById(user)
@@ -88,6 +95,9 @@ export class AuthService {
     return this.classMapper.map(user, UserEntity, ReadUserDto)
   }
 
+  /*
+   * * Login user
+   */
   async validateUser(validateUserData: LoginUserDto): Promise<TokenLoginDto> {
     const userEntity = this.classMapper.map(validateUserData, LoginUserDto, UserEntity)
     const user = await this.usersService.findByEmail(userEntity)
@@ -123,8 +133,76 @@ export class AuthService {
     throw new HttpException('Password not match', HttpStatus.UNAUTHORIZED)
   }
 
-  getJwtToken(id: string, uuid: string) {
-    const payload = { userId: id }
+  /*
+   * * Logout user
+   */
+  async logout(jtiDto: JtiDto): Promise<TokenDto> {
+    let tokenEntity = this.classMapper.map(jtiDto, JtiDto, TokenEntity)
+    tokenEntity = await this.tokenService.findByJti(tokenEntity)
+
+    if (!tokenEntity) {
+      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED)
+    }
+    tokenEntity = await this.tokenService.deleteById(tokenEntity)
+    return this.classMapper.map(tokenEntity, TokenEntity, TokenDto)
+  }
+
+  /*
+   * * Refresh new access token for user
+   */
+  async refreshAccessToken(tokenPayload: TokenPayloadDto): Promise<TokenLoginDto> {
+    let tokenEntity = this.classMapper.map(tokenPayload, TokenPayloadDto, TokenEntity)
+    let deviceToken: TokenEntity = await this.tokenService.findByJti(tokenEntity)
+
+    if (!deviceToken) {
+      throw new HttpException('Refresh token not valid', HttpStatus.UNAUTHORIZED)
+    }
+
+    let jti = randomUUID()
+    let token = this.getJwtToken(deviceToken.userId, jti)
+
+    const { iat, exp } = this.jwtService.verify(token.refreshToken, {
+      secret: process.env.REFRESH_TOKEN_SECRET_KEY,
+    })
+
+    tokenEntity = await this.tokenService.updateByJti(deviceToken, {
+      createdAt: (iat * 1000).toString(),
+      expiredAt: (exp * 1000).toString(),
+      jti: jti,
+    })
+
+    return token
+  }
+
+  /*
+   * * Revoke one or more device of user
+   */
+  async revokeDevices(tokenPayload: TokenPayloadDto, jtiDtoArr: JtiDto[]): Promise<any> {
+    let tokenEntity = this.classMapper.map(tokenPayload, TokenPayloadDto, TokenEntity)
+    const userDevices = await this.tokenService.findManyByUserId(tokenEntity)
+    const userDeviceJtis = userDevices.map((device) => {
+      return device.jti
+    })
+    const revokeJtis = []
+    jtiDtoArr.forEach((jtiDto) => {
+      if (userDeviceJtis.includes(jtiDto.jti)) {
+        revokeJtis.push(jtiDto.jti)
+      }
+    })
+
+    return await this.tokenService.deleteManyByUserIdAndJti(tokenEntity, revokeJtis)
+  }
+
+  /*
+   * * Revoke all devices of user except device that takes this action
+   */
+  async revokeAllDevice(tokenPayload: TokenPayloadDto): Promise<any> {
+    let tokenEntity = this.classMapper.map(tokenPayload, TokenPayloadDto, TokenEntity)
+    return await this.tokenService.deleteManyByUserIdWithoutJti(tokenEntity)
+  }
+
+  getJwtToken(userId: string, uuid: string) {
+    const payload = { userId: userId }
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.ACCESS_TOKEN_SECRET_KEY,
       expiresIn: process.env.ACCESS_TOKEN_EXPIRED_TIME,
@@ -138,14 +216,10 @@ export class AuthService {
     return { accessToken, refreshToken }
   }
 
-  async logout(jtiDto: JtiDto): Promise<TokenEntity> {
-    let tokenEntity = this.classMapper.map(jtiDto, JtiDto, TokenEntity)
-    console.log(tokenEntity)
-    tokenEntity = await this.tokenService.findByJtiAndId(tokenEntity)
-    console.log(tokenEntity)
-    if (!tokenEntity) {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED)
+  isTokenExpired(payload: TokenPayloadDto): boolean {
+    if (1000 * parseInt(payload.exp) < Date.now()) {
+      return true
     }
-    return await this.tokenService.deleteById(tokenEntity)
+    return false
   }
 }
